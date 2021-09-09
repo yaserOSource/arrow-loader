@@ -19,6 +19,7 @@ export default () => {
   const app = useApp();
   
   const size = 0.5;
+  const scale = 0.3;
 
   const geometry = new THREE.PlaneBufferGeometry(size, size)
 	  .applyMatrix4(
@@ -99,7 +100,7 @@ export default () => {
     // polygonOffsetUnits: 1,
   });
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.scale.setScalar(0.3);
+  mesh.scale.setScalar(scale);
   mesh.frustumCulled = false;
   // mesh.visible = false;
   // console.log('got bounding box', boundingBox);
@@ -108,7 +109,19 @@ export default () => {
   const tailMesh = (() => {
     const width = 0.47;
     const height = width*1245/576;
-    const geometry = new THREE.PlaneBufferGeometry(width, height);
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(2 * 3 * 64);
+    const positionsAttribute = new THREE.BufferAttribute(positions, 3);
+    geometry.setAttribute('position', positionsAttribute);
+    const uvs = new Float32Array(positions.length/3*2);
+    const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
+    geometry.setAttribute('uv', uvsAttribute);
+    const indices = new Uint16Array(positions.length/3);
+    const indexAttribute = new THREE.BufferAttribute(indices, 1);
+    geometry.setIndex(indexAttribute);
+    let positionIndex = 0;
+    let indexIndex = 0;
+    let maxIndexIndex = 0;
     
     const u = `${import.meta.url.replace(/(\/)[^\/]*$/, '$1')}tail.png`;
     (async () => {
@@ -175,12 +188,106 @@ export default () => {
       polygonOffsetFactor: 1,
       polygonOffsetUnits: 1,
     });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.y = -height/2;
-    mesh.frustumCulled = false;
-    return mesh;
+    const tailMesh = new THREE.Mesh(geometry, material);
+    // tailMesh.position.y = -height/2;
+    // tailMesh.drawMode = THREE.TriangleStripDrawMode;
+    tailMesh.frustumCulled = false;
+    /* tailMesh.update = () => {
+      localVector.copy(mesh.position)
+        .add(
+          localVector2.set(-width*scale/2, 0, 0)
+            .applyQuaternion(mesh.quaternion)
+          )
+        .toArray(positions, positionIndex);
+      positionIndex += 3;
+      localVector.copy(mesh.position)
+        .add(
+          localVector2.set(width*scale/2, 0, 0)
+            .applyQuaternion(mesh.quaternion)
+          )
+        .toArray(positions, positionIndex);
+      positionIndex += 3;
+
+      for (let i = positionIndex/3 - 2; i < positionIndex/3; i++) {
+        if (i % 2 === 0) {
+          indices[indexIndex++] = i;
+          indices[indexIndex++] = i+1;
+          indices[indexIndex++] = i+2;
+        } else {
+          indices[indexIndex++] = i+2;
+          indices[indexIndex++] = i+1;
+          indices[indexIndex++] = i;
+        }
+      }
+      
+      positionsAttribute.needsUpdate = true;
+      indexAttribute.needsUpdate = true;
+      
+      // maxPositionIndex = Math.max(positionIndex, maxPositionIndex);
+      maxIndexIndex = Math.max(indexIndex, maxIndexIndex);
+      geometry.setDrawRange(0, maxIndexIndex);
+      positionIndex = positionIndex % positions.length;
+    }; */
+    const points = [];
+    let index = 0;
+    tailMesh.update = () => {
+      const p = mesh.position.clone();
+      const q = mesh.quaternion.clone();
+      points.push({
+        position: p,
+        quaternion: q,
+        index: index++,
+      });
+      while (points.length > 16) {
+        points.shift();
+      }
+      
+      if (points.length >= 2) {
+        let positionIndex = 0;
+        let uvIndex = 0;
+        let indexIndex = 0;
+        for (let i = points.length-1; i >= 0; i--) {
+          const {position, quaternion, index} = points[i];
+          localVector.copy(position)
+            .add(
+              localVector2.set(-width*scale/2, 0, 0)
+                .applyQuaternion(quaternion)
+              )
+            .toArray(positions, positionIndex);
+          positionIndex += 3;
+          localVector.copy(position)
+            .add(
+              localVector2.set(width*scale/2, 0, 0)
+                .applyQuaternion(quaternion)
+              )
+            .toArray(positions, positionIndex);
+          positionIndex += 3;
+          
+          if (i % 2 === 0) {
+            indices[indexIndex++] = i;
+            indices[indexIndex++] = i+1;
+            indices[indexIndex++] = i+2;
+          } else {
+            indices[indexIndex++] = i+2;
+            indices[indexIndex++] = i+1;
+            indices[indexIndex++] = i;
+          }
+          
+          const y = -index * 0.2;
+          uvs[uvIndex++] = 0;
+          uvs[uvIndex++] = y;
+          uvs[uvIndex++] = 1;
+          uvs[uvIndex++] = y;
+        }
+        positionsAttribute.needsUpdate = true;
+        uvsAttribute.needsUpdate = true;
+        indexAttribute.needsUpdate = true;
+        geometry.setDrawRange(0, indexIndex);
+      }
+    };
+    return tailMesh;
   })();
-  mesh.add(tailMesh);
+  app.add(tailMesh);
 
   // const angle = new THREE.Euler(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2, 'YXZ');
   // const direction = new THREE.Euler(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2, 'YXZ');
@@ -188,7 +295,7 @@ export default () => {
   let inclination = 1;
   const r = 0.3;
   let da = 0;
-  let di = 0.1;
+  let di = 0.2;
   const lastPosition = new THREE.Vector3(0, 0, 1);
   useFrame(() => {
     mesh.position.set(
@@ -217,8 +324,9 @@ export default () => {
     
 	  mesh.material.uniforms.uTime.value = (Date.now() % 30000) / 30000;
     mesh.material.uniforms.uTime.needsUpdate = true;
-	  tailMesh.material.uniforms.uTime.value = (Date.now() % 1000) / 1000;
-    tailMesh.material.uniforms.uTime.needsUpdate = true;
+	  // tailMesh.material.uniforms.uTime.value = (Date.now() % 1000) / 1000;
+    // tailMesh.material.uniforms.uTime.needsUpdate = true;
+    tailMesh.update();
 	});
 
   return app;
