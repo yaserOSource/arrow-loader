@@ -1,8 +1,23 @@
 import * as THREE from 'three';
 import metaversefile from 'metaversefile';
-const {useFrame} = metaversefile;
+const {useApp, useFrame} = metaversefile;
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+
+const q90 = new THREE.Quaternion()
+  .setFromUnitVectors(
+    new THREE.Vector3(0, 0, 1),
+    new THREE.Vector3(0, 1, 0)
+  );
 
 export default () => {
+  const app = useApp();
+  
   const size = 0.5;
 
   const geometry = new THREE.PlaneBufferGeometry(size, size)
@@ -84,9 +99,11 @@ export default () => {
     // polygonOffsetUnits: 1,
   });
   const mesh = new THREE.Mesh(geometry, material);
+  mesh.scale.setScalar(0.3);
   mesh.frustumCulled = false;
   // mesh.visible = false;
   // console.log('got bounding box', boundingBox);
+  app.add(mesh);
 
   const tailMesh = (() => {
     const width = 0.47;
@@ -148,6 +165,8 @@ export default () => {
         void main() {
           // gl_FragColor = vec4(1., 0., 0., 1.);
           gl_FragColor = texture2D(tex, vec2(vUv.x, vUv.y + uTime));
+          // gl_FragColor.rgb *= 1. + vUv.y;
+          // gl_FragColor.a = pow(vUv.y, 0.5);
         }
       `,
       transparent: true,
@@ -163,11 +182,44 @@ export default () => {
   })();
   mesh.add(tailMesh);
 
+  // const angle = new THREE.Euler(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2, 'YXZ');
+  // const direction = new THREE.Euler(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2, 'YXZ');
+  let azimuth = Math.PI/2;
+  let inclination = 1;
+  const r = 0.3;
+  let da = 0;
+  let di = 0.1;
+  const lastPosition = new THREE.Vector3(0, 0, 1);
   useFrame(() => {
+    mesh.position.set(
+      r * Math.cos(azimuth) * Math.sin(inclination),
+      r * Math.sin(azimuth) * Math.sin(inclination),
+      r * Math.cos(inclination)
+    );
+    mesh.quaternion.setFromRotationMatrix(
+      localMatrix.lookAt(
+        lastPosition,
+        mesh.position,
+        localVector3.copy(mesh.position)
+          .multiplyScalar(-1)
+      )
+    ).multiply(q90);
+    lastPosition.copy(mesh.position);
+    azimuth += da;
+    azimuth %= Math.PI*2;
+    inclination += di;
+    inclination %= Math.PI*2;
+    /* mesh.quaternion.setFromEuler(angle);
+    mesh.position.set(0, 0, -1).applyQuaternion(mesh.quaternion);
+    angle.x += direction.x * 0.01;
+    angle.y += direction.y * 0.01;
+    angle.z += direction.z * 0.01; */
+    
 	  mesh.material.uniforms.uTime.value = (Date.now() % 30000) / 30000;
     mesh.material.uniforms.uTime.needsUpdate = true;
 	  tailMesh.material.uniforms.uTime.value = (Date.now() % 1000) / 1000;
     tailMesh.material.uniforms.uTime.needsUpdate = true;
 	});
-  return mesh;
+
+  return app;
 };
