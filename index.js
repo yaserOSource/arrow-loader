@@ -299,7 +299,7 @@ export default () => {
   let da = 0;
   let di = 0.2;
   const lastPosition = new THREE.Vector3(0, 0, 1);
-  useFrame(() => {
+  useFrame(({timestamp}) => {
     mesh.position.set(
       r * Math.cos(azimuth) * Math.sin(inclination),
       r * Math.sin(azimuth) * Math.sin(inclination),
@@ -324,9 +324,9 @@ export default () => {
     angle.y += direction.y * 0.01;
     angle.z += direction.z * 0.01; */
     
-	  mesh.material.uniforms.uTime.value = (Date.now() % 30000) / 30000;
+	  mesh.material.uniforms.uTime.value = (timestamp % 30000) / 30000;
     mesh.material.uniforms.uTime.needsUpdate = true;
-	  // tailMesh.material.uniforms.uTime.value = (Date.now() % 1000) / 1000;
+	  // tailMesh.material.uniforms.uTime.value = (timestamp % 1000) / 1000;
     // tailMesh.material.uniforms.uTime.needsUpdate = true;
     tailMesh.update();
 	});
