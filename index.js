@@ -58,13 +58,16 @@ const arrowMaterial = (() => {
       },
     },
     vertexShader: `\
+      ${THREE.ShaderChunk.common}
       precision highp float;
       precision highp int;
       varying vec2 vUv;
+      ${THREE.ShaderChunk.logdepthbuf_pars_vertex}
       void main() {
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mvPosition;
         
+        ${THREE.ShaderChunk.logdepthbuf_vertex}
         vUv = uv;
       }
     `,
@@ -75,6 +78,8 @@ const arrowMaterial = (() => {
       uniform sampler2D tex;
       uniform float uTime;
       varying vec2 vUv;
+
+      ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
       void main() {
         float t = floor(uTime * 16. * 16.);
         float x = mod(t, 16.);
@@ -85,6 +90,7 @@ const arrowMaterial = (() => {
         if (gl_FragColor.a < 0.9) {
           discard;
         }
+        ${THREE.ShaderChunk.logdepthbuf_fragment}
       }
     `,
     transparent: true,
@@ -131,13 +137,15 @@ const tailMaterial = (() => {
       },
     },
     vertexShader: `\
+      ${THREE.ShaderChunk.common}
       precision highp float;
       precision highp int;
       varying vec2 vUv;
+      ${THREE.ShaderChunk.logdepthbuf_pars_vertex}
       void main() {
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mvPosition;
-        
+        ${THREE.ShaderChunk.logdepthbuf_vertex}
         vUv = uv;
       }
     `,
@@ -148,11 +156,13 @@ const tailMaterial = (() => {
       uniform sampler2D tex;
       uniform float uTime;
       varying vec2 vUv;
+      ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
       void main() {
         // gl_FragColor = vec4(1., 0., 0., 1.);
         gl_FragColor = texture2D(tex, vec2(vUv.x, vUv.y + uTime));
         // gl_FragColor.rgb *= 1. + vUv.y;
         // gl_FragColor.a = pow(vUv.y, 0.5);
+        ${THREE.ShaderChunk.logdepthbuf_fragment}
       }
     `,
     transparent: true,
