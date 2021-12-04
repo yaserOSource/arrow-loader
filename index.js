@@ -328,11 +328,7 @@ export default () => {
     azimuth %= Math.PI*2;
     inclination += di;
     inclination %= Math.PI*2;
-    /* mesh.quaternion.setFromEuler(angle);
-    mesh.position.set(0, 0, -1).applyQuaternion(mesh.quaternion);
-    angle.x += direction.x * 0.01;
-    angle.y += direction.y * 0.01;
-    angle.z += direction.z * 0.01; */
+    mesh.updateMatrixWorld();
     
 	  mesh.material.uniforms.uTime.value = (timestamp % 30000) / 30000;
     mesh.material.uniforms.uTime.needsUpdate = true;
