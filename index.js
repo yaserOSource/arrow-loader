@@ -87,17 +87,17 @@ const arrowMaterial = (() => {
         float y = 0.;
         vec2 uv = (vUv / 16.0) + vec2(x, y)/16.;
         gl_FragColor = texture2D(tex, uv);
+	${THREE.ShaderChunk.logdepthbuf_fragment}
         if (gl_FragColor.a < 0.9) {
           discard;
         }
-        ${THREE.ShaderChunk.logdepthbuf_fragment}
       }
     `,
     transparent: true,
     side: THREE.DoubleSide,
-    // polygonOffset: true,
-    // polygonOffsetFactor: -1,
-    // polygonOffsetUnits: 1,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: 1,
   });
   return material;
 })();
