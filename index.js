@@ -87,17 +87,17 @@ const arrowMaterial = (() => {
         float y = 0.;
         vec2 uv = (vUv / 16.0) + vec2(x, y)/16.;
         gl_FragColor = texture2D(tex, uv);
+	${THREE.ShaderChunk.logdepthbuf_fragment}
         if (gl_FragColor.a < 0.9) {
           discard;
         }
-        ${THREE.ShaderChunk.logdepthbuf_fragment}
       }
     `,
     transparent: true,
     side: THREE.DoubleSide,
-    // polygonOffset: true,
-    // polygonOffsetFactor: -1,
-    // polygonOffsetUnits: 1,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: 1,
   });
   return material;
 })();
@@ -328,11 +328,7 @@ export default () => {
     azimuth %= Math.PI*2;
     inclination += di;
     inclination %= Math.PI*2;
-    /* mesh.quaternion.setFromEuler(angle);
-    mesh.position.set(0, 0, -1).applyQuaternion(mesh.quaternion);
-    angle.x += direction.x * 0.01;
-    angle.y += direction.y * 0.01;
-    angle.z += direction.z * 0.01; */
+    mesh.updateMatrixWorld();
     
 	  mesh.material.uniforms.uTime.value = (timestamp % 30000) / 30000;
     mesh.material.uniforms.uTime.needsUpdate = true;
