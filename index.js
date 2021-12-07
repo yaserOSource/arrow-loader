@@ -328,6 +328,7 @@ export default () => {
     azimuth %= Math.PI*2;
     inclination += di;
     inclination %= Math.PI*2;
+    mesh.updateMatrix();
     mesh.updateMatrixWorld();
     
 	  mesh.material.uniforms.uTime.value = (timestamp % 30000) / 30000;
